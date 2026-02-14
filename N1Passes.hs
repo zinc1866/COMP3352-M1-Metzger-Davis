@@ -66,12 +66,25 @@ uniquifyExp (Negate exp) state =
 
 -- You must fill out the following:
 
-uniquifyExp (Add x y) state = 
-  x
+uniquifyExp (Add x y) (UState env counter) = 
+  case uniquifyExp x state of 
+    CState state' (Right x') -> 
+      case uniquifyExp y state' of
+        CState state'' Right x' -> CState state'' $ Right $ Add x' y' 
+        err -> err
+    err -> err
+
 uniquifyExp (Var sym) (UState env counter) = 
   case lookupEnv sym env of  
-    Just newName -> CState (UState env counter) $ Right("Symbol '" ++ sym ++ "' not found")
+    Just newName -> CState (UState env counter) $ Right(Var newName)
     Nothing ->  CState (UState env counter) $ Left ("Symbol '" ++ sym ++ "' not found")
 
-uniquifyExp (Let sym exp body) state = 
-  x
+uniquifyExp (Let sym exp body) (UState env counter) =
+  let freshName = "s" ++ show counter                   
+  in case uniquifyExp exp (UState env (counter + 1)) of 
+    CState (UState env' counter') (Right exp') ->
+      let env'' = extendEnv sym freshName env'           
+      in case uniquifyExp body (UState env'' counter') of 
+        CState state'' (Right body') -> CState state'' $ Right $ Let freshName exp' body'
+        err -> err
+    err -> err
