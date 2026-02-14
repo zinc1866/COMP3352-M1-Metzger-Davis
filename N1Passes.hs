@@ -1,3 +1,16 @@
+-- imports for writing our N1 -> N1 passes
+import N1
+import Env
+
+-- for our case, a result will simply be an Either String a
+type Result a = Either String a
+
+-- we define a return type, or result type, for our compiler
+-- because we need to return information about a particular pass
+-- along with the result of the pass, which is often a transformation
+-- of the AST. You can think of this in some ways as an accumulator
+-- for a fold operation over an AST.
+data CompilerResult a b = CState a (Result b)
 -- this is the state we'll use for the uniquefy pass, it has
 -- an environment which we'll adjust as we enter let expressions
 -- and an Integer which will be used for generating symbol names
