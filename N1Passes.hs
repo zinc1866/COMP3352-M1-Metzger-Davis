@@ -10,10 +10,13 @@ type Result a = Either String a
 -- along with the result of the pass, which is often a transformation
 -- of the AST. You can think of this in some ways as an accumulator
 -- for a fold operation over an AST.
+
 data CompilerResult a b = CState a (Result b)
+
 -- this is the state we'll use for the uniquefy pass, it has
 -- an environment which we'll adjust as we enter let expressions
 -- and an Integer which will be used for generating symbol names
+
 data UniquifyState = UState (Env String) Integer
 
 -- a uniquify result is a compiler result with our state and an N1 Exp
@@ -62,6 +65,13 @@ uniquifyExp (Negate exp) state =
     err -> err
 
 -- You must fill out the following:
--- uniquifyExp (Add x y) state = ...
--- uniquifyExp (Var sym) state = ...
--- uniquifyExp (Let sym exp body) state = ...
+
+uniquifyExp (Add x y) state = 
+  x
+uniquifyExp (Var sym) (UState env counter) = 
+  case lookupEnv sym env of  
+    Just newName -> CState (UState env counter) $ Right("Symbol '" ++ sym ++ "' not found")
+    Nothing ->  CState (UState env counter) $ Left ("Symbol '" ++ sym ++ "' not found")
+
+uniquifyExp (Let sym exp body) state = 
+  x
