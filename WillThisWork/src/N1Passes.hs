@@ -1,3 +1,5 @@
+module N1Passes where
+
 -- imports for writing our N1 -> N1 passes
 import N1
 import Env
@@ -23,7 +25,7 @@ data UniquifyState = UState (Env String) Integer
 type UniquifyResult = CompilerResult UniquifyState Exp
 
 -- a helper function to pull out the result from the compiler result
-getResult :: CompilerResult UniquifyState N1 -> Result N1
+getResult :: CompilerResult UniquifyState Program -> Result Program
 getResult (CState _ (Right p)) = Right p
 getResult (CState _ err) = err
 
@@ -66,11 +68,11 @@ uniquifyExp (Negate exp) state =
 
 -- You must fill out the following:
 
-uniquifyExp (Add x y) (UState env counter) = 
-  case uniquifyExp x state of 
-    CState state' (Right x') -> 
+uniquifyExp (Add x y) state =
+  case uniquifyExp x state of
+    CState state' (Right x') ->
       case uniquifyExp y state' of
-        CState state'' Right x' -> CState state'' $ Right $ Add x' y' 
+        CState state'' (Right y') -> CState state'' $ Right $ Add x' y'
         err -> err
     err -> err
 
