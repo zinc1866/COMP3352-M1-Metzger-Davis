@@ -3,21 +3,7 @@ module N1Passes where
 -- imports for writing our N1 -> N1 passes
 import N1
 import Env
-
--- for our case, a result will simply be an Either String a
-type Result a = Either String a
-
--- we define a return type, or result type, for our compiler
--- because we need to return information about a particular pass
--- along with the result of the pass, which is often a transformation
--- of the AST. You can think of this in some ways as an accumulator
--- for a fold operation over an AST.
-
-data CompilerResult a b = CState a (Result b)
-
--- this is the state we'll use for the uniquefy pass, it has
--- an environment which we'll adjust as we enter let expressions
--- and an Integer which will be used for generating symbol names
+import CompilerPasses
 
 data UniquifyState = UState (Env String) Integer
 
@@ -25,7 +11,7 @@ data UniquifyState = UState (Env String) Integer
 type UniquifyResult = CompilerResult UniquifyState Exp
 
 -- a helper function to pull out the result from the compiler result
-getResult :: CompilerResult UniquifyState Program -> Result Program
+getResult :: CompilerResult UniquifyState N1 -> Result N1
 getResult (CState _ (Right p)) = Right p
 getResult (CState _ err) = err
 
@@ -35,9 +21,9 @@ getResult (CState _ err) = err
   N1 program, but ensures that every variable name is unique!
 --}
 uniquify :: N1 -> CompilerResult UniquifyState N1
-uniquify (Program exp) =
+uniquify (N1 exp) =
   case uniquifyExp exp (UState Env.makeEnv 0) of
-    CState state (Right exp') -> CState state $ Right $ Program exp'
+    CState state (Right exp') -> CState state $ Right $ N1 exp'
     CState state (Left msg) -> CState state $ Left msg  
 
 

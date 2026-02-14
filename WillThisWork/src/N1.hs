@@ -13,5 +13,5 @@ data Exp
   | Let String Exp Exp
   deriving (Eq, Show)
 
-newtype Program = Program Exp
+newtype N1 = N1 Exp
   deriving (Eq, Show)
