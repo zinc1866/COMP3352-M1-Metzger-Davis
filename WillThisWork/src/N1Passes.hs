@@ -76,3 +76,53 @@ uniquifyExp (Let sym exp body) (UState env counter) =
         CState state'' (Right body') -> CState state'' $ Right $ Let freshName exp' body'
         err -> err
     err -> err
+
+
+  -- we will have slightly different types this time around, but still very similar:
+type RCOState = Integer
+type RCOResult = CompilerResult RCOState Exp
+
+-- we're changing our pass slightly to simply take a CompilerResult as an argument
+-- and return a CompilerResult
+passRemoveComplexOperas :: CompilerResult RCOState N1 -> CompilerResult RCOState N1
+
+-- straightforward since we just have one kind of program that contains an expression
+passRemoveComplexOperas (CState symCount (Right (Program expr))) =
+    case rcoExp (CState symCount (Right expr)) of
+      CState symCount (Right exp') -> CState symCount $ Right $ Program exp'
+      CState symCount (Left msg) -> CState symCount $ Left msg
+
+-- rcoExp walks through expressions that can be complex or atomic
+rcoExp :: RCOResult -> RCOResult  
+rcoExp atm@(CState _ (Right Read)) = atm
+rcoExp atm@(CState _ (Right (Int _))) = atm
+rcoExp atm@(CState _ (Right (Var _))) = ... 
+-- let expressions, subexpressions can be atomic or complex
+rcoExp (CState state (Right (Let sym expr body))) = ...
+-- negate expressions, which need atomic subexpressions
+rcoExp (CState state (Right (Negate expr))) = ...
+-- add expressions, subexpressions must be atomicrcpExp
+rcoExp (CState state (Right (Add x y)))  = ...
+-- pass errors up
+rcoExp (CState _ (Left msg)) = CState 0 (Left msg)
+
+-- Define a type for our atomic expression operations. This type returns a pair, which
+-- is either a new Var, if needed, or the old expression. The list is then a list of name
+-- binding pairs, where the binding is an expression. The idea here is that when this function
+-- returns to rcoExp, you'll create a bunch of let bindings from this list, and Exp is sub'd
+-- wherever this was called from
+type AtmResult = CompilerResult RCOState (Exp, [(String, Exp)])
+rcoAtom :: AtmResult -> AtmResult
+rcoAtm res@(CState _ (Right (Int _, _))) = res 
+rcoAtm res@(CState _ (Right (Read, _))) = res
+rcoAtm res@(CState _ (Right (Var _, _))) = res
+
+-- negate expressions
+rcoAtm (CState symCount (Right (Negate expr, lst))) = ...
+
+-- add expressions, here, both subexpressions must be atoms too
+rcoAtm (CState symCount (Right (Add e1 e2, lst))) = ...
+
+-- let expressions, either of these expressions, expr or body,
+-- can be atomic or complex
+rcoAtm (CState symCount (Right (Let sym expr body, lst))) = ...
