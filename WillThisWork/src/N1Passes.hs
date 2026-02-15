@@ -98,9 +98,24 @@ rcoExp atm@(CState _ (Right Read)) = atm
 rcoExp atm@(CState _ (Right (Int _))) = atm
 rcoExp atm@(CState _ (Right (Var _))) = ... 
 -- let expressions, subexpressions can be atomic or complex
-rcoExp (CState state (Right (Let sym expr body))) = ...
+rcoExp (CState state (Right (Let sym expr body))) = atm
+
 -- negate expressions, which need atomic subexpressions
-rcoExp (CState state (Right (Negate expr))) = ...
+rcoExp (CState state (Right (Negate expr))) = 
+
+    let res = rcoExp (CState state (Right expr)) in
+    case res of
+      CState st (Right e) ->
+        let (atom, binds) = rcoAtom st e in
+        if null binds
+          then CState st (Right (Negate atom))
+          else -- introduce let-bindings for any non-atomic subexpressions
+            let (name, expr1) = head binds in
+            CState st (Right (Let name expr1 (Negate (Var name))))
+      CState st (Left msg) -> CState st (Left msg)
+
+
+
 -- add expressions, subexpressions must be atomicrcpExp
 rcoExp (CState state (Right (Add x y)))  = ...
 -- pass errors up
