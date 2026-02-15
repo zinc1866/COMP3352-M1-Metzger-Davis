@@ -11,7 +11,7 @@ data UniquifyState = UState (Env String) Integer
 type UniquifyResult = CompilerResult UniquifyState Exp
 
 -- a helper function to pull out the result from the compiler result
-getResult :: CompilerResult UniquifyState N1 -> Result N1
+getResult :: CompilerResult a Program -> Result Program
 getResult (CState _ (Right p)) = Right p
 getResult (CState _ err) = err
 
@@ -20,11 +20,11 @@ getResult (CState _ err) = err
   The uniquify pass transforms an N1 program into another
   N1 program, but ensures that every variable name is unique!
 --}
-uniquify :: N1 -> CompilerResult UniquifyState N1
+uniquify :: Program -> CompilerResult UniquifyState Program
 uniquify (Program exp) =
   case uniquifyExp exp (UState Env.makeEnv 0) of
-    CState state (Right exp') -> CState state $ Right $ N1 exp'
-    CState state (Left msg) -> CState state $ Left msg  
+    CState state (Right exp') -> CState state $ Right $ Program exp'
+    CState state (Left msg) -> CState state $ Left msg
 
 
 
@@ -83,12 +83,19 @@ type RCOState = Integer
 type RCOResult = CompilerResult RCOState Exp
 
 
+{-- Grammar for the target of this pass:
 atm ::= Int Int64 | Var String
-exp ::= atm | Read | Negate atm | Add atm atm | Let String exp exp 
-N1' ::= Program exp 
+exp ::= atm | Read | Negate atm | Add atm atm | Let String exp exp
+N1' ::= Program exp
+--}
+-- helper to wrap a list of bindings around an expression as nested Lets
+wrapBindings :: [(String, Exp)] -> Exp -> Exp
+wrapBindings [] body = body
+wrapBindings ((name, expr):rest) body = Let name expr (wrapBindings rest body)
+
 -- we're changing our pass slightly to simply take a CompilerResult as an argument
 -- and return a CompilerResult
-passRemoveComplexOperas :: CompilerResult RCOState N1 -> CompilerResult RCOState N1
+passRemoveComplexOperas :: CompilerResult RCOState Program -> CompilerResult RCOState Program
 
 -- straightforward since we just have one kind of program that contains an expression
 passRemoveComplexOperas (CState symCount (Right (Program expr))) =
@@ -111,54 +118,23 @@ rcoExp (CState state (Right (Let sym expr body))) =
         err -> err
     err -> err
 -- negate expressions, which need atomic subexpressions
-rcoExp (CState state (Right (Negate expr))) = 
-
-    let res = rcoExp (CState state (Right expr)) in
-    case res of
-      CState st (Right e) ->
-        let (atom, binds) = rcoAtom st e in
-        if null binds
-          then CState st (Right (Negate atom))
-          else -- introduce let-bindings for any non-atomic subexpressions
-            let (name, expr1) = head binds in
-            CState st (Right (Let name expr1 (Negate (Var name))))
-      CState st (Left msg) -> CState st (Left msg)
+rcoExp (CState state (Right (Negate expr))) =
+  case rcoAtm (CState state (Right (expr, []))) of
+    CState sc' (Right (atom, bindings)) ->
+      CState sc' $ Right $ wrapBindings bindings (Negate atom)
+    CState sc' (Left msg) -> CState sc' (Left msg)
 
 
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
--- add expressions, subexpressions must be atomicrcpExp
-rcoExp (CState state (Right (Add x y)))  = 
-
-
-  rcoExp (CState state (Right (Let sym expr body))) =
-  case rcoExp (CState state (Right expr)) of
-    CState sc' (Right expr') ->
-      case rcoExp (CState sc' (Right body)) of
-        CState sc'' (Right body') ->
-          CState sc'' $ Right $ Let sym expr' body'
-=======
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
+-- add expressions, subexpressions must be atomic
 rcoExp (CState state (Right (Add x y))) =
   case rcoAtm (CState state (Right (x, []))) of
     CState sc' (Right (atom1, bindings1)) ->
       case rcoAtm (CState sc' (Right (y, bindings1))) of
         CState sc'' (Right (atom2, bindings2)) ->
           CState sc'' $ Right $ wrapBindings bindings2 (Add atom1 atom2)
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-        err -> err
-    err -> err
+        CState sc'' (Left msg) -> CState sc'' (Left msg)
+    CState sc' (Left msg) -> CState sc' (Left msg)
 
 -- pass errors up
 rcoExp (CState _ (Left msg)) = CState 0 (Left msg)
@@ -202,6 +178,6 @@ rcoAtm (CState symCount (Right (Let sym expr body, lst))) =
     CState sc' (Right expr') ->
       case rcoAtm (CState sc' (Right (body, lst))) of
         CState sc'' (Right (atomBody, bindings)) ->
-          CState sc'' $ Right (atomBody, [(sym, expr')] ++ bindings)
+          CState sc'' $ Right (atomBody, (sym, expr') : bindings)
         err -> err
-    err -> err  
+    CState sc' (Left msg) -> CState sc' (Left msg)
