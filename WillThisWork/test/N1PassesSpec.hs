@@ -97,3 +97,14 @@ spec = do
     it "can rco on let x = 5 in -(x + -x)" $ do
       rcoResult (Program (Let "x" (Int 5) (Negate (Add (Var "x") (Negate (Var "x")))))) `shouldBe`
         Right (Program (Let "x" (Int 5) (Let "s0" (Negate (Var "x")) (Let "s1" (Add (Var "x") (Var "s0")) (Negate (Var "s1"))))))
+
+  describe "Three tests that exist only to torture Haskell *more* than it already has been* pass tests:" $ do
+    it "can rco on Add (Let x = 5 in x) 7 - let hoisted out of Add operand" $ do
+      rcoResult (Program (Add (Let "x" (Int 5) (Var "x")) (Int 7))) `shouldBe`
+        Right (Program (Let "x" (Int 5) (Add (Var "x") (Int 7))))
+    it "can rco on Negate (Let x = 5 in x + 3) - let hoisted out of Negate" $ do
+      rcoResult (Program (Negate (Let "x" (Int 5) (Add (Var "x") (Int 3))))) `shouldBe`
+        Right (Program (Let "x" (Int 5) (Let "s0" (Add (Var "x") (Int 3)) (Negate (Var "s0")))))
+    it "can rco on let a = 1 in (-a) + (-2) - multiple negates in Add body" $ do
+      rcoResult (Program (Let "a" (Int 1) (Add (Negate (Var "a")) (Negate (Int 2))))) `shouldBe`
+        Right (Program (Let "a" (Int 1) (Let "s0" (Negate (Var "a")) (Let "s1" (Negate (Int 2)) (Add (Var "s0") (Var "s1"))))))
