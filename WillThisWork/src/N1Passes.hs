@@ -96,7 +96,7 @@ passRemoveComplexOperas (CState symCount (Right (Program expr))) =
 rcoExp :: RCOResult -> RCOResult  
 rcoExp atm@(CState _ (Right Read)) = atm
 rcoExp atm@(CState _ (Right (Int _))) = atm
-rcoExp atm@(CState _ (Right (Var _))) = ... 
+rcoExp atm@(CState _ (Right (Var _))) = atm
 -- let expressions, subexpressions can be atomic or complex
 rcoExp (CState state (Right (Let sym expr body))) = atm
 
@@ -117,7 +117,15 @@ rcoExp (CState state (Right (Negate expr))) =
 
 
 -- add expressions, subexpressions must be atomicrcpExp
-rcoExp (CState state (Right (Add x y)))  = ...
+rcoExp (CState state (Right (Add x y)))  = 
+  rcoExp (CState state (Right (Let sym expr body))) =
+  case rcoExp (CState state (Right expr)) of
+    CState sc' (Right expr') ->
+      case rcoExp (CState sc' (Right body)) of
+        CState sc'' (Right body') ->
+          CState sc'' $ Right $ Let sym expr' body'
+        err -> err
+    err -> err
 -- pass errors up
 rcoExp (CState _ (Left msg)) = CState 0 (Left msg)
 
