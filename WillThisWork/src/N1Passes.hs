@@ -82,6 +82,10 @@ uniquifyExp (Let sym exp body) (UState env counter) =
 type RCOState = Integer
 type RCOResult = CompilerResult RCOState Exp
 
+
+atm ::= Int Int64 | Var String
+exp ::= atm | Read | Negate atm | Add atm atm | Let String exp exp 
+N1' ::= Program exp 
 -- we're changing our pass slightly to simply take a CompilerResult as an argument
 -- and return a CompilerResult
 passRemoveComplexOperas :: CompilerResult RCOState N1 -> CompilerResult RCOState N1
@@ -118,6 +122,8 @@ rcoExp (CState state (Right (Negate expr))) =
 
 -- add expressions, subexpressions must be atomicrcpExp
 rcoExp (CState state (Right (Add x y)))  = 
+
+
   rcoExp (CState state (Right (Let sym expr body))) =
   case rcoExp (CState state (Right expr)) of
     CState sc' (Right expr') ->
