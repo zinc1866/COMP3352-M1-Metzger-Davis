@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(stack build)",
-      "Bash(stack test:*)"
-    ]
-  }
-}
