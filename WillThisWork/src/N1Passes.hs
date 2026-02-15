@@ -96,13 +96,13 @@ passRemoveComplexOperas (CState symCount (Right (Program expr))) =
 rcoExp :: RCOResult -> RCOResult  
 rcoExp atm@(CState _ (Right Read)) = atm
 rcoExp atm@(CState _ (Right (Int _))) = atm
-rcoExp atm@(CState _ (Right (Var _))) = atm
+rcoExp atm@(CState _ (Right (Var _))) = ... 
 -- let expressions, subexpressions can be atomic or complex
-rcoExp (CState state (Right (Let sym expr body))) = atm
+rcoExp (CState state (Right (Let sym expr body))) = ...
 -- negate expressions, which need atomic subexpressions
-rcoExp (CState state (Right (Negate expr))) = atm
+rcoExp (CState state (Right (Negate expr))) = ...
 -- add expressions, subexpressions must be atomicrcpExp
-rcoExp (CState state (Right (Add x y)))  = atm
+rcoExp (CState state (Right (Add x y)))  = ...
 -- pass errors up
 rcoExp (CState _ (Left msg)) = CState 0 (Left msg)
 
@@ -118,11 +118,33 @@ rcoAtm res@(CState _ (Right (Read, _))) = res
 rcoAtm res@(CState _ (Right (Var _, _))) = res
 
 -- negate expressions
-rcoAtm (CState symCount (Right (Negate expr, lst))) = atm
+rcoAtm (CState symCount (Right (Negate expr, lst))) = 
+  case rcoAtm (CState symCount (Right (expr, lst))) of
+  CState symCount' (Right (atomExpr, bindings)) ->
+    let freshName = "s" ++ show symCount'
+    in CState (symCount' + 1) $ Right (Var freshName, bindings ++ [(freshName, Negate atomExpr)])
+
+
 
 -- add expressions, here, both subexpressions must be atoms too
-rcoAtm (CState symCount (Right (Add e1 e2, lst))) = atm
+rcoAtm (CState symCount (Right (Add e1 e2, lst))) =
+  case rcoAtm (CState symCount (Right (e1, lst))) of
+    CState sc' (Right (atom1, bindings1)) ->
+      case rcoAtm (CState sc' (Right (e2, bindings1))) of
+        CState sc'' (Right (atom2, bindings2)) ->
+          let fresh = "s" ++ show sc''
+          in CState (sc'' + 1) $ Right (Var fresh, bindings2 ++ [(fresh, Add atom1 atom2)])
+        err -> err
+    err -> err
+
 
 -- let expressions, either of these expressions, expr or body,
 -- can be atomic or complex
-rcoAtm (CState symCount (Right (Let sym expr body, lst))) = atm
+rcoAtm (CState symCount (Right (Let sym expr body, lst))) =
+  case rcoExp (CState symCount (Right expr)) of
+    CState sc' (Right expr') ->
+      case rcoAtm (CState sc' (Right (body, lst))) of
+        CState sc'' (Right (atomBody, bindings)) ->
+          CState sc'' $ Right (atomBody, [(sym, expr')] ++ bindings)
+        err -> err
+    err -> err  
