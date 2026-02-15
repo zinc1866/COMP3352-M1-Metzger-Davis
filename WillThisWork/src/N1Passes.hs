@@ -128,6 +128,7 @@ rcoExp (CState state (Right (Negate expr))) =
 
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 -- add expressions, subexpressions must be atomicrcpExp
 rcoExp (CState state (Right (Add x y)))  = 
 
@@ -141,6 +142,8 @@ rcoExp (CState state (Right (Add x y)))  =
 =======
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
 rcoExp (CState state (Right (Add x y))) =
   case rcoAtm (CState state (Right (x, []))) of
     CState sc' (Right (atom1, bindings1)) ->
@@ -148,6 +151,9 @@ rcoExp (CState state (Right (Add x y))) =
         CState sc'' (Right (atom2, bindings2)) ->
           CState sc'' $ Right $ wrapBindings bindings2 (Add atom1 atom2)
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
