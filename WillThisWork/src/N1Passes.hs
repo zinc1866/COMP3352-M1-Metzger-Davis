@@ -127,6 +127,7 @@ rcoExp (CState state (Right (Negate expr))) =
 
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 -- add expressions, subexpressions must be atomicrcpExp
 rcoExp (CState state (Right (Add x y)))  = 
 
@@ -138,12 +139,17 @@ rcoExp (CState state (Right (Add x y)))  =
         CState sc'' (Right body') ->
           CState sc'' $ Right $ Let sym expr' body'
 =======
+=======
+>>>>>>> Stashed changes
 rcoExp (CState state (Right (Add x y))) =
   case rcoAtm (CState state (Right (x, []))) of
     CState sc' (Right (atom1, bindings1)) ->
       case rcoAtm (CState sc' (Right (y, bindings1))) of
         CState sc'' (Right (atom2, bindings2)) ->
           CState sc'' $ Right $ wrapBindings bindings2 (Add atom1 atom2)
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
         err -> err
     err -> err
