@@ -21,7 +21,7 @@ getResult (CState _ err) = err
   N1 program, but ensures that every variable name is unique!
 --}
 uniquify :: N1 -> CompilerResult UniquifyState N1
-uniquify (N1 exp) =
+uniquify (Program exp) =
   case uniquifyExp exp (UState Env.makeEnv 0) of
     CState state (Right exp') -> CState state $ Right $ N1 exp'
     CState state (Left msg) -> CState state $ Left msg  
@@ -102,8 +102,14 @@ rcoExp atm@(CState _ (Right Read)) = atm
 rcoExp atm@(CState _ (Right (Int _))) = atm
 rcoExp atm@(CState _ (Right (Var _))) = atm
 -- let expressions, subexpressions can be atomic or complex
-rcoExp (CState state (Right (Let sym expr body))) = atm
-
+rcoExp (CState state (Right (Let sym expr body))) =
+  case rcoExp (CState state (Right expr)) of
+    CState sc' (Right expr') ->
+      case rcoExp (CState sc' (Right body)) of
+        CState sc'' (Right body') ->
+          CState sc'' $ Right $ Let sym expr' body'
+        err -> err
+    err -> err
 -- negate expressions, which need atomic subexpressions
 rcoExp (CState state (Right (Negate expr))) = 
 
@@ -120,6 +126,7 @@ rcoExp (CState state (Right (Negate expr))) =
 
 
 
+<<<<<<< Updated upstream
 -- add expressions, subexpressions must be atomicrcpExp
 rcoExp (CState state (Right (Add x y)))  = 
 
@@ -130,8 +137,17 @@ rcoExp (CState state (Right (Add x y)))  =
       case rcoExp (CState sc' (Right body)) of
         CState sc'' (Right body') ->
           CState sc'' $ Right $ Let sym expr' body'
+=======
+rcoExp (CState state (Right (Add x y))) =
+  case rcoAtm (CState state (Right (x, []))) of
+    CState sc' (Right (atom1, bindings1)) ->
+      case rcoAtm (CState sc' (Right (y, bindings1))) of
+        CState sc'' (Right (atom2, bindings2)) ->
+          CState sc'' $ Right $ wrapBindings bindings2 (Add atom1 atom2)
+>>>>>>> Stashed changes
         err -> err
     err -> err
+
 -- pass errors up
 rcoExp (CState _ (Left msg)) = CState 0 (Left msg)
 
@@ -141,7 +157,7 @@ rcoExp (CState _ (Left msg)) = CState 0 (Left msg)
 -- returns to rcoExp, you'll create a bunch of let bindings from this list, and Exp is sub'd
 -- wherever this was called from
 type AtmResult = CompilerResult RCOState (Exp, [(String, Exp)])
-rcoAtom :: AtmResult -> AtmResult
+rcoAtm :: AtmResult -> AtmResult
 rcoAtm res@(CState _ (Right (Int _, _))) = res 
 rcoAtm res@(CState _ (Right (Read, _))) = res
 rcoAtm res@(CState _ (Right (Var _, _))) = res
