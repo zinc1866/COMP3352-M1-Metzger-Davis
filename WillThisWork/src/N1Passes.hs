@@ -83,9 +83,7 @@ type RCOState = Integer
 type RCOResult = CompilerResult RCOState Exp
 
 
-atm ::= Int Int64 | Var String
-exp ::= atm | Read | Negate atm | Add atm atm | Let String exp exp 
-N1' ::= Program exp 
+
 -- we're changing our pass slightly to simply take a CompilerResult as an argument
 -- and return a CompilerResult
 passRemoveComplexOperas :: CompilerResult RCOState N1 -> CompilerResult RCOState N1
